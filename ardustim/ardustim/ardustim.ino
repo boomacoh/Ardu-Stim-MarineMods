@@ -62,7 +62,7 @@ uint16_t sweep_rate = 1;
 sweep_step *SweepSteps;  /* Global pointer for the sweep steps */
 
 wheels Wheels[MAX_WHEELS] = {
-   /* Pointer to friendly name string, pointer to edge array, RPM Scaler, Number of edges in the array, whether the number of edges covers 360 or 720 degrees */
+  /* Pointer to friendly name string, pointer to edge array, RPM Scaler, Number of edges in the array, whether the number of edges covers 360 or 720 degrees */
   { dizzy_four_cylinder_friendly_name, dizzy_four_cylinder, 0.03333, 4, 360 },
   { dizzy_six_cylinder_friendly_name, dizzy_six_cylinder, 0.05, 6, 360 },
   { dizzy_eight_cylinder_friendly_name, dizzy_eight_cylinder, 0.06667, 8, 360 },
@@ -121,6 +121,8 @@ wheels Wheels[MAX_WHEELS] = {
   { Toyota_4AGZE_friendly_name, toyota_4AGZE, 0.333, 144, 720 },
   { Suzuki_DRZ400_friendly_name, suzuki_DRZ400,0.6, 72, 360},
   { Jeep_2000_friendly_name, jeep_2000, 1.5, 360, 720},
+  { sixty_minus_two_with_4X_cam_friendly_name, sixty_minus_two_with_4X_cam, 1.0, 240, 720 },
+  { sixty_minus_three_with_4X_cam_friendly_name, sixty_minus_three_with_4X_cam, 1.0, 240, 720 },
 };
 
 /* Initialization */
@@ -204,13 +206,11 @@ void setup() {
 
 //  pinMode(7, OUTPUT); /* Debug pin for Saleae to track sweep ISR execution speed */
   pinMode(8, OUTPUT); /* Primary (crank usually) output */
-  pinMode(9, OUTPUT); /* Secondary (cam1 usually) output */
-  pinMode(10, OUTPUT); /* Tertiary (cam2 usually) output */
-  pinMode(11, OUTPUT); /* Knock signal for seank, ony on LS1 pattern, NOT IMPL YET */
+  pinMode(9, OUTPUT); /* Secondary (cam usually) output */
+  pinMode(10, OUTPUT); /* Knock signal for seank, ony on LS1 pattern, NOT IMPL YET */
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  pinMode(53, OUTPUT); /* crank */
-  pinMode(52, OUTPUT); /* cam 1 */
-  pinMode(51, OUTPUT); /* untested - should be cam2*/
+  pinMode(53, OUTPUT); 
+  pinMode(52, OUTPUT); 
 #endif
 
   sei(); // Enable interrupts

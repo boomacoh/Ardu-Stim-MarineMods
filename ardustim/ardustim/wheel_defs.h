@@ -51,18 +51,6 @@
   * Most/all patterns show the pulses you're receive for one revolution
   * of a REAL wheel on a real engine.
   */
-
-  /*
-   * Values to use within a wheel definition. 
-   * 0 means no tooth on any wheel definition
-   * 1 means crank tooth
-   * 2 means cam1 tooth
-   * 4 means cam2 tooth
-   * 
-   * combinations of numbers mean all of the related teeth are present, 
-   * eg  3 means crank and cam1, 5 means crank and cam2, 6 means cam1 and cam2, 7 means crank, cam1 and cam2 
-   */
-
   
   /* Wheel types we know about...
    * This enumerations is the INDEX into the Wheels[] array of structures
@@ -131,6 +119,8 @@
    TOYOTA_4AGZE,           /*Toyota 4AGZE, 24 teeth and one cam tooth*/
    SUZUKI_DRZ400,         /* Suzuki DRZ-400 6 coil "tooths", 2 uneven crank tooths */
    JEEP2000,  /* Jeep 4.0 6cyl aka jeep2000 */
+   SIxTY_MINUS_TWO_WITH_4X_CAM, /* GM 4X cam */
+   SIxTY_MINUS_THREE_WITH_4X_CAM, /* GM LB7 LLY 4X cam */
    MAX_WHEELS,
  }WheelType;
 
@@ -193,6 +183,8 @@
  const char Toyota_4AGZE_friendly_name[] PROGMEM = "Toyota 4AGZE";
  const char Suzuki_DRZ400_friendly_name[] PROGMEM = "Suzuki DRZ400";
  const char Jeep_2000_friendly_name[] PROGMEM = "Jeep 2000";
+ const char sixty_minus_two_with_4X_cam_friendly_name[] PROGMEM = "GM 60-2 with 4X cam";
+ const char sixty_minus_three_with_4X_cam_friendly_name[] PROGMEM = "GM 60-3 with 4X cam";
 
  /* Very simple 50% duty cycle */
  const unsigned char dizzy_four_cylinder[] PROGMEM = 
@@ -1365,6 +1357,64 @@
      0,0,0,0,0,0,0,1,0,0,  /* Degrees 680-700. Tooth #20 at 694* for 2* duration */
      0,0,0,0,0,0,0,1,0,0  /* Degrees 700-720. Tooth #21 at 714* for 2* duration */
    };
+   
+ /* Bosch 60-2 pattern with 2nd trigger on rotation 2,
+  * GM 4X CAM */
+ const unsigned char sixty_minus_two_with_4X_cam[] PROGMEM =
+   { /* 60-2 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 1-5 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 6-10 */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 11-15 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 16-20 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 21-25 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 26-30 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 31-35 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 36-40 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 41-45 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 46-50 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 51-55 */
+     1,0,1,0,1,0,0,0,0,0,  /* teeth 56-58 and 59-60 MISSING */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 1-5 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 6-10 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 11-15 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 16-20 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 21-25 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 26-30 */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 31-35 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 36-40 */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 41-45 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 46-50 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 51-55 */
+     3,2,3,2,3,2,2,2,2,2   /* teeth 56-58 and 59-60 MISSING */
+   };
 
-
+ /* Bosch 60-3 pattern with 2nd trigger on rotation 2,
+  * GM 4X CAM */
+ const unsigned char sixty_minus_three_with_4X_cam[] PROGMEM =
+   { /* 60-2 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 1-5 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 6-10 */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 11-15 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 16-20 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 21-25 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 26-30 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 31-35 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 36-40 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 41-45 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 46-50 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 51-55 */
+     1,0,1,0,0,0,0,0,0,0,  /* teeth 56-58 and 58-60 MISSING */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 1-5 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 6-10 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 11-15 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 16-20 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 21-25 */
+     1,0,1,0,1,0,1,0,1,0,  /* teeth 26-30 */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 31-35 */
+     3,2,3,2,3,0,1,0,1,0,  /* teeth 36-40 */
+     1,0,1,0,3,2,3,2,3,2,  /* teeth 41-45 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 46-50 */
+     3,2,3,2,3,2,3,2,3,2,  /* teeth 51-55 */
+     3,2,3,2,2,2,2,2,2,2   /* teeth 56-58 and 58-60 MISSING */
+   };
   #endif
