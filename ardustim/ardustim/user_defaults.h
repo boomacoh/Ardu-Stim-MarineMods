@@ -25,7 +25,7 @@
  
 #include "wheel_defs.h"
 
-#define DEFAULT_RPM 6000
-#define DEFAULT_WHEEL DIZZY_FOUR_CYLINDER
+#define DEFAULT_RPM 100
+#define DEFAULT_WHEEL EIGHT_CAM_ONE_CRANK
 
 #endif

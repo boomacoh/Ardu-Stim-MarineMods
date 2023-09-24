@@ -63,50 +63,11 @@ extern uint16_t sweep_rate;
 extern sweep_step *SweepSteps; /* Global pointer for the sweep steps */
 
 wheels Wheels[MAX_WHEELS] = {
-  /* Pointer to friendly name string, pointer to edge array, RPM Scaler, Number of edges in the array */
-  { dizzy_four_cylinder_friendly_name, dizzy_four_cylinder, 0.03333, 4 },
-  { dizzy_six_cylinder_friendly_name, dizzy_six_cylinder, 0.05, 6 },
-  { dizzy_eight_cylinder_friendly_name, dizzy_eight_cylinder, 0.06667, 8 },
-  { sixty_minus_two_friendly_name, sixty_minus_two, 1.0, 120 },
-  { sixty_minus_two_with_cam_friendly_name, sixty_minus_two_with_cam, 1.0, 240 },
-  { thirty_six_minus_one_friendly_name, thirty_six_minus_one, 0.6, 72 },
-  { four_minus_one_with_cam_friendly_name, four_minus_one_with_cam, 0.06667, 16 },
-  { eight_minus_one_friendly_name, eight_minus_one, 0.13333, 16 },
-  { six_minus_one_with_cam_friendly_name, six_minus_one_with_cam, 0.15, 36 },
-  { twelve_minus_one_with_cam_friendly_name, twelve_minus_one_with_cam, 0.6, 144 },
-  { fourty_minus_one_friendly_name, fourty_minus_one, 0.66667, 80 },
-  { dizzy_four_trigger_return_friendly_name, dizzy_four_trigger_return, 0.075, 9 },
-  { oddfire_vr_friendly_name, oddfire_vr, 0.2, 24 },
-  { optispark_lt1_friendly_name, optispark_lt1, 3.0, 720 },
-  { twelve_minus_three_friendly_name, twelve_minus_three, 0.4, 48 },
-  { thirty_six_minus_two_two_two_friendly_name, thirty_six_minus_two_two_two, 0.6, 72 },
-  { thirty_six_minus_two_two_two_with_cam_friendly_name, thirty_six_minus_two_two_two_with_cam, 0.6, 144 },
-  { fourty_two_hundred_wheel_friendly_name, fourty_two_hundred_wheel, 0.6, 72 },
-  { thirty_six_minus_one_with_cam_fe3_friendly_name, thirty_six_minus_one_with_cam_fe3, 0.6, 144 },
-  { six_g_seventy_two_with_cam_friendly_name, six_g_seventy_two_with_cam, 0.6, 144 },
-  { buell_oddfire_cam_friendly_name, buell_oddfire_cam, 0.33333, 80 },
-  { gm_ls1_crank_and_cam_friendly_name, gm_ls1_crank_and_cam, 3.0, 720 },
-  { lotus_thirty_six_minus_one_one_one_one_friendly_name, lotus_thirty_six_minus_one_one_one_one, 0.3, 72 },
-  { honda_rc51_with_cam_friendly_name, honda_rc51_with_cam, 0.2, 48 },
-  { thirty_six_minus_one_with_second_trigger_friendly_name, thirty_six_minus_one_with_second_trigger, 0.6, 144 },
-  { thirty_six_minus_one_plus_one_with_cam_ngc4_friendly_name, thirty_six_minus_one_plus_one_with_cam_ngc4, 3.0, 720 },
-  { weber_iaw_with_cam_friendly_name, weber_iaw_with_cam, 0.6, 144 },
-  { fiat_one_point_eight_sixteen_valve_with_cam_friendly_name, fiat_one_point_eight_sixteen_valve_with_cam, 3.0, 720 },
-  { three_sixty_nissan_cas_friendly_name, three_sixty_nissan_cas, 3.0, 720 },
-  { twenty_four_minus_two_with_second_trigger_friendly_name, twenty_four_minus_two_with_second_trigger, 0.3, 72 },
-  { yamaha_eight_tooth_with_cam_friendly_name, yamaha_eight_tooth_with_cam, 0.26667, 64 },
-  { gm_four_tooth_with_cam_friendly_name, gm_four_tooth_with_cam, 0.03333, 8 },
-  { gm_six_tooth_with_cam_friendly_name, gm_six_tooth_with_cam, 0.05, 12 },
-  { gm_eight_tooth_with_cam_friendly_name, gm_eight_tooth_with_cam, 0.06667, 16 },
-  { volvo_d12acd_with_cam_friendly_name, volvo_d12acd_with_cam, 2.0, 480 },
-  { mazda_thirty_six_minus_two_two_two_with_six_tooth_cam_friendly_name, mazda_thirty_six_minus_two_two_two_with_six_tooth_cam, 1.5, 360 },
-  { sixty_minus_two_with_4X_cam_friendly_name, sixty_minus_two_with_4X_cam, 1.0, 240 },
-  { gen4_dodge_srt_v10_sixty_minus_two_with_cam_friendly_name, gen4_dodge_srt_v10_sixty_minus_two_with_cam, 1.0, 240 },
-  { twenty_four_minus_one_with_cam_friendly_name, twenty_four_minus_one_with_cam, 0.4, 96 },
-  { four_g_sixty_three_with_cam_friendly_name, four_g_sixty_three_with_cam, 3, 720 },
-  { seadoo_thirty_six_minus_two_friendly_name, seadoo_thirty_six_minus_two, 0.6, 72 },
-  { buick_gm_18x_3x_friendly_name, buick_gm_18x_3x, 0.6, 72 },
-
+  /* Pointer to friendly name string, pointer to edge array, RPM Scaler, Number of edges in the array, whether the number of edges covers 360 or 720 degrees */
+  { eight_cam_one_crank_friendly_name, eight_cam_one_crank, eight_cam_one_crank_array, 1.0, 240 },
+  { inverted_eight_cam_one_crank_friendly_name, inverted_eight_cam_one_crank, inverted_eight_cam_one_crank_array, 1.0, 240 },
+  { sixty_minus_two_with_4X_cam_friendly_name, sixty_minus_two_with_4X_cam, eight_cam_one_crank_array, 1.0, 240 },
+  { sixty_minus_three_with_4X_cam_friendly_name, sixty_minus_three_with_4X_cam, eight_cam_one_crank_array, 1.0, 240 },
 };
 
 
@@ -306,10 +267,38 @@ ISR(TIMER2_COMPA_vect) {
  * in a very nice way
  */
 ISR(TIMER1_COMPA_vect) {
-  /* The tables are in flash so we need pgm_read_byte() */
-  /* This is VERY simple, just walk the array and wrap when we hit the limit */
-  PORTB = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]);   /* Write it to the port */
-  /* Normal direction: overflow handling */
+   /* This is VERY simple, just walk the array and wrap when we hit the limit */
+  // Serial.print("Edge Counter: ");
+  // Serial.print(edge_counter);
+  // Serial.print(",");
+  // selected_wheel = 0;
+  // Serial.print("Select wheel: ");
+  // Serial.print(selected_wheel);
+  // Serial.print(" , ");
+  // Serial.print("Output Invert Mask: ");
+  // printBinary(output_invert_mask);
+  // Serial.print(" , ");
+
+  // Serial.print("Edge State ");
+  // printBinary(pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]));
+  // Serial.print(" , ");
+  // Serial.print(pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]));
+  // Serial.println(",");
+
+  // printBinary(PORTB);
+  // Serial.println();
+
+#if defined(__AVR_ATmega328P__)
+  PORTC = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter]);
+  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << 4); /* Write it to the port */
+  PORTD = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) >> 4);
+
+
+#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  PORTA = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter]);
+  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter])); /* Write it to the port */
+  PORTC = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]);   /* Write it to the port */
+#endif
   if (normal)
   {
     edge_counter++;

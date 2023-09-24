@@ -144,9 +144,20 @@ void setup() {
   ADCSRA |= B00001000;
 
 //  pinMode(7, OUTPUT); /* Debug pin for Saleae to track sweep ISR execution speed */
-  pinMode(8, OUTPUT); /* Primary (crank usually) output */
-  pinMode(9, OUTPUT); /* Secondary (cam usually) output */
-  pinMode(10, OUTPUT); /* Knock signal for seank, ony on LS1 pattern, NOT IMPL YET */
+#if defined(__AVR_ATmega328P__)
+  DDRB = B00011111;
+  DDRD = B11110000;
+  DDRC = B00000001;
+
+
+#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  // pinMode(53, OUTPUT);
+  // pinMode(52, OUTPUT);
+  DDRB = B00011111;
+  DDRC = B11110000;
+  DDRA = B00000001;
+  // pinMode(22, OUTPUT);
+#endif
 
   sei(); // Enable interrupts
   // Set ADSC in ADCSRA (0x7A) to start the ADC conversion
