@@ -40,6 +40,8 @@ void select_wheel_cb(void);
 void set_rpm_cb(void);
 void sweep_rpm_cb(void);
 void reverse_wheel_direction_cb(void);
+void shift_cam_left(void);
+void shift_cam_right(void);
 void do_exit(void);
 /* Callbacks */
 

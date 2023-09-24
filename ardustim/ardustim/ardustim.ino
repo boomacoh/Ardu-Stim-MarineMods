@@ -32,6 +32,7 @@
 /* Sensitive stuff used in ISR's */
 volatile uint8_t fraction = 0;
 volatile uint8_t selected_wheel = DEFAULT_WHEEL;
+volatile uint8_t camSignalBitShift = 0;
 volatile uint16_t adc0; /* POT RPM */
 volatile uint16_t adc1; /* Pot Wheel select */
 volatile uint32_t oc_remainder = 0;

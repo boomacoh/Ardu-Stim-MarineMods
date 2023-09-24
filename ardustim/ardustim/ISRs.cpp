@@ -32,6 +32,7 @@
 /* Sensistive stuff used in ISR's */
 extern volatile uint8_t fraction;
 extern volatile uint8_t selected_wheel;
+extern volatile uint8_t camSignalBitShift;
 extern volatile uint16_t adc0; /* POT RPM */
 extern volatile uint16_t adc1; /* Pot Wheel select */
 extern volatile uint32_t oc_remainder;
@@ -290,14 +291,14 @@ ISR(TIMER1_COMPA_vect) {
 
 #if defined(__AVR_ATmega328P__)
   PORTC = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter]);
-  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << 4); /* Write it to the port */
-  PORTD = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) >> 4);
+  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << (4 + camSignalBitShift)); /* Write it to the port */
+  PORTD = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << (-4 + camSignalBitShift));
 
 
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   PORTA = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter]);
-  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter])); /* Write it to the port */
-  PORTC = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]);   /* Write it to the port */
+  PORTB = (output_invert_mask ^ (pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << camSignalBitShift)); /* Write it to the port */
+  PORTC = (output_invert_mask ^ (pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << camSignalBitShift));  /* Write it to the port */
 #endif
   if (normal)
   {
