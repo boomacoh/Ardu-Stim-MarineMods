@@ -20,28 +20,14 @@
  *
  */
 
-#ifndef __STRUCTURES_H__
-#define __STRUCTURES_H__
+#ifndef __ISRS_H__
+#define __ISRS_H__
 
 #include <inttypes.h>
-#include <avr/pgmspace.h>
- 
-/* Structures */
-typedef struct _sweep_step sweep_step;
-struct _sweep_step {
-  uint16_t beginning_ocr;
-  uint16_t ending_ocr;
-  uint8_t prescaler_bits;
-  uint32_t remainder_per_isr;
-  uint16_t tcnt_per_isr;
-};
+#include <avr/io.h>
 
-/* Tie things wheel related into one nicer structure ... */
-typedef struct _wheels wheels;
-struct _wheels {
-  const char* decoder_name PROGMEM;
-  const unsigned char *edge_states_ptr PROGMEM;
-  const float rpm_scaler;
-  const uint16_t wheel_max_edges;
-};
+ISR(ADC_vect);         /* Analog pot for analog RPM control with no UI */
+ISR(TIMER1_COMPA_vect); /* High speed pattern output */
+ISR(TIMER2_COMPA_vect); /* Sweeper */
+
 #endif

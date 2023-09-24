@@ -20,28 +20,37 @@
  *
  */
 
-#ifndef __STRUCTURES_H__
-#define __STRUCTURES_H__
-
-#include <inttypes.h>
-#include <avr/pgmspace.h>
+#ifndef __SERIAL_MENU_H__
+#define __SERIAL_MENU_H__
  
-/* Structures */
-typedef struct _sweep_step sweep_step;
-struct _sweep_step {
-  uint16_t beginning_ocr;
-  uint16_t ending_ocr;
-  uint8_t prescaler_bits;
-  uint32_t remainder_per_isr;
-  uint16_t tcnt_per_isr;
-};
+#include <SerialUI.h>
+//#include "structures.h"
 
-/* Tie things wheel related into one nicer structure ... */
-typedef struct _wheels wheels;
-struct _wheels {
-  const char* decoder_name PROGMEM;
-  const unsigned char *edge_states_ptr PROGMEM;
-  const float rpm_scaler;
-  const uint16_t wheel_max_edges;
-};
+/* Structures */
+
+/* Prototypes */
+/* Callbacks */
+void show_info_cb(void);
+void select_next_wheel_cb(void);
+void select_previous_wheel_cb(void);
+void toggle_invert_primary_cb(void);
+void toggle_invert_secondary_cb(void);
+void list_wheels_cb(void);
+void select_wheel_cb(void);
+void set_rpm_cb(void);
+void sweep_rpm_cb(void);
+void reverse_wheel_direction_cb(void);
+void do_exit(void);
+/* Callbacks */
+
+/* General functions */
+void display_rpm_info(void);
+void serial_setup(void);
+void display_new_wheel(void);
+void print_normal(void);
+void print_inverted(void);
+void compute_sweep_stages(uint16_t *, uint16_t *);
+uint16_t get_rpm_from_tcnt(uint16_t *, uint8_t *);
+uint8_t get_bitshift_from_prescaler(uint8_t *);
+
 #endif

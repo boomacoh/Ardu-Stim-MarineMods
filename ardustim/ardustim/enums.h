@@ -1,8 +1,9 @@
-/* vim: set syntax=c expandtab sw=2 softtabstop=2 autoindent smartindent smarttab : */
 /*
- * Arbritrary wheel pattern generator wheel definitions
+ * vim: filetype=c expandtab shiftwidth=2 tabstop=2 softtabstop=2:
  *
- * copyright 2014 David J. Andruczyk
+ * Arbritrary crank/cam wheel pattern generator
+ *
+ * copyright 2014-2017 David J. Andruczyk
  * 
  * Ardu-Stim software is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  * along with any ArduStim software.  If not, see http://www.gnu.org/licenses/
  *
  */
+
 #ifndef __ENUMS_H__
 #define __ENUMS_H__
  
@@ -37,10 +39,8 @@ enum {
 };
 
 enum {
-  LINEAR_SWEPT_RPM,
   FIXED_RPM,
-  POT_RPM,
-  MAX_MODES,
+  LINEAR_SWEPT_RPM,
 };
 
 #endif

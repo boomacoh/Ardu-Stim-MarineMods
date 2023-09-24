@@ -1,8 +1,9 @@
-/* vim: set syntax=c expandtab sw=2 softtabstop=2 autoindent smartindent smarttab : */
 /*
- * Arbritrary wheel pattern generator
+ * vim: filetype=c expandtab shiftwidth=2 tabstop=2 softtabstop=2:
  *
- * copyright 2014 David J. Andruczyk
+ * Arbritrary crank/cam wheel pattern generator
+ *
+ * copyright 2014-2017 David J. Andruczyk
  * 
  * Ardu-Stim software is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +20,18 @@
  *
  */
 
-#include "defines.h"
-#include "ardustim.h"
+#include "defines.h" 
 #include "enums.h"
-#include "comms.h"
-#include "storage.h"
-#include "user_defaults.h"
+#include "serialmenu.h"
+#include "sweep.h"
 #include "wheel_defs.h"
+#include "user_defaults.h"
 #include <avr/pgmspace.h>
-#include <EEPROM.h>
+#include <SerialUI.h>
 
-/* Sensistive stuff used in ISR's */
+/* Sensitive stuff used in ISR's */
 volatile uint8_t fraction = 0;
+volatile uint8_t selected_wheel = DEFAULT_WHEEL;
 volatile uint16_t adc0; /* POT RPM */
 volatile uint16_t adc1; /* Pot Wheel select */
 volatile uint32_t oc_remainder = 0;
@@ -46,36 +47,29 @@ volatile bool sweep_lock = false;
 volatile uint8_t output_invert_mask = 0x00; /* Don't invert anything */
 volatile uint8_t sweep_direction = ASCENDING;
 volatile byte total_sweep_stages = 0;
-volatile uint8_t sweep_stage = 0;
+volatile int8_t sweep_stage = 0;
 volatile uint8_t prescaler_bits = 0;
 volatile uint8_t last_prescaler_bits = 0;
-volatile uint8_t mode = 0;
+volatile uint8_t mode = FIXED_RPM;
 volatile uint16_t new_OCR1A = 5000; /* sane default */
 volatile uint16_t edge_counter = 0;
 
 /* Less sensitive globals */
 uint8_t bitshift = 0;
-uint16_t sweep_low_rpm = 250;
-uint16_t sweep_high_rpm = 4000;
-uint16_t sweep_rate = 1;
+uint16_t sweep_low_rpm = 0;
+uint16_t sweep_high_rpm = 0;
+uint16_t sweep_rate = 0;
 
-sweep_step *SweepSteps; /* Global pointer for the sweep steps */
-
-wheels Wheels[MAX_WHEELS] = {
-  /* Pointer to friendly name string, pointer to edge array, RPM Scaler, Number of edges in the array, whether the number of edges covers 360 or 720 degrees */
-
-  { eight_cam_one_crank_friendly_name, eight_cam_one_crank, eight_cam_one_crank_array, 1.0, 240, 720 },
-  { inverted_eight_cam_one_crank_friendly_name, inverted_eight_cam_one_crank, inverted_eight_cam_one_crank_array, 1.0, 240, 720 },
-  { sixty_minus_two_with_4X_cam_friendly_name, sixty_minus_two_with_4X_cam, eight_cam_one_crank_array, 1.0, 240, 720 },
-  { sixty_minus_three_with_4X_cam_friendly_name, sixty_minus_three_with_4X_cam, eight_cam_one_crank_array, 1.0, 240, 720 },
-};
+SUI::SerialUI mySUI = SUI::SerialUI();
+sweep_step *SweepSteps;  /* Global pointer for the sweep steps */
 
 /* Initialization */
 void setup() {
-  serialSetup();
-  loadConfig();
+  mySUI.setGreeting(F("+++ Welcome to the ArduStim +++\r\nEnter ? for help"));                                  
+  extern unsigned long wanted_rpm;
+  serial_setup();
 
-  cli();  // stop interrupts
+  cli(); // stop interrupts
 
   /* Configuring TIMER1 (pattern generator) */
   // Set timer1 to generate pulses
@@ -84,10 +78,10 @@ void setup() {
   TCNT1 = 0;
 
   // Set compare register to sane default
-  OCR1A = 1000; /* 8000 RPM (60-2) */
+  OCR1A = 1000;  /* 8000 RPM (60-2) */
 
   // Turn on CTC mode
-  TCCR1B |= (1 << WGM12);  // Normal mode (not PWM)
+  TCCR1B |= (1 << WGM12); // Normal mode (not PWM)
   // Set prescaler to 1
   TCCR1B |= (1 << CS10); /* Prescaler of 1 */
   // Enable output compare interrupt for timer channel 1 (16 bit)
@@ -99,10 +93,10 @@ void setup() {
   TCNT2 = 0;
 
   // Set compare register to sane default
-  OCR2A = 249; /* With prescale of x64 gives 1ms tick */
+  OCR2A = 249;  /* With prescale of x64 gives 1ms tick */
 
   // Turn on CTC mode
-  TCCR2A |= (1 << WGM21);  // Normal mode (not PWM)
+  TCCR2A |= (1 << WGM21); // Normal mode (not PWM)
   // Set prescaler to x64
   TCCR2B |= (1 << CS22); /* Prescaler of 64 */
   // Enable output compare interrupt for timer channel 2
@@ -113,406 +107,51 @@ void setup() {
   // clear ADLAR in ADMUX (0x7C) to right-adjust the result
   // ADCL will contain lower 8 bits, ADCH upper 2 (in last two bits)
   ADMUX &= B11011111;
-
+  
   // Set REFS1..0 in ADMUX (0x7C) to change reference voltage to the
   // proper source (01)
   ADMUX |= B01000000;
-
+  
   // Clear MUX3..0 in ADMUX (0x7C) in preparation for setting the analog
   // input
   ADMUX &= B11110000;
-
+  
   // Set MUX3..0 in ADMUX (0x7C) to read from AD8 (Internal temp)
   // Do not set above 15! You will overrun other parts of ADMUX. A full
   // list of possible inputs is available in Table 24-4 of the ATMega328
   // datasheet
   // ADMUX |= 8;
   // ADMUX |= B00001000; // Binary equivalent
-
+  
   // Set ADEN in ADCSRA (0x7A) to enable the ADC.
   // Note, this instruction takes 12 ADC clocks to execute
   ADCSRA |= B10000000;
-
+  
   // Set ADATE in ADCSRA (0x7A) to enable auto-triggering.
   ADCSRA |= B00100000;
-
+  
   // Clear ADTS2..0 in ADCSRB (0x7B) to set trigger mode to free running.
   // This means that as soon as an ADC has finished, the next will be
   // immediately started.
   ADCSRB &= B11111000;
-
+  
   // Set the Prescaler to 128 (16000KHz/128 = 125KHz)
   // Above 200KHz 10-bit results are not reliable.
   ADCSRA |= B00000111;
-
+  
   // Set ADIE in ADCSRA (0x7A) to enable the ADC interrupt.
   // Without this, the internal interrupt will not trigger.
   ADCSRA |= B00001000;
 
-  //  pinMode(7, OUTPUT); /* Debug pin for Saleae to track sweep ISR execution speed */
-  pinMode(49, OUTPUT); /* Primary (crank usually) output */
-  pinMode(9, OUTPUT);  /* Secondary (cam usually) output */
+//  pinMode(7, OUTPUT); /* Debug pin for Saleae to track sweep ISR execution speed */
+  pinMode(8, OUTPUT); /* Primary (crank usually) output */
+  pinMode(9, OUTPUT); /* Secondary (cam usually) output */
   pinMode(10, OUTPUT); /* Knock signal for seank, ony on LS1 pattern, NOT IMPL YET */
 
-
-
-
-#if defined(__AVR_ATmega328P__)
-  DDRB = B00011111;
-  DDRD = B11110000;
-  DDRC = B00000001;
-
-
-#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  // pinMode(53, OUTPUT);
-  // pinMode(52, OUTPUT);
-  DDRB = B00011111;
-  DDRC = B11110000;
-  DDRA = B00000001;
-  // pinMode(22, OUTPUT);
-#endif
-
-  sei();  // Enable interrupts
+  sei(); // Enable interrupts
   // Set ADSC in ADCSRA (0x7A) to start the ADC conversion
   ADCSRA |= B01000000;
   /* Make sure we are using the DEFAULT RPM on startup */
-  reset_new_OCR1A(wanted_rpm);
+  reset_new_OCR1A(wanted_rpm); 
 
-}  // End setup
-
-
-//! ADC ISR for alternating between ADC pins 0 and 1
-/*!
- * Reads ADC ports 0 and 1 alternately. Port 0 is RPM, Port 1 is for
- * future fun (possible wheel selection)
- */
-ISR(ADC_vect) {
-  if (analog_port == 0) {
-    adc0 = ADCL | (ADCH << 8);
-    adc0_read_complete = true;
-    /* Flip to channel 1 */
-    //ADMUX |= B00000001;
-    //analog_port = 1;
-    /* Trigger another conversion */
-    //ADCSRA |= B01000000;
-    return;
-  }
-  //  if (analog_port == 1)
-  //  {
-  //    adc1 = ADCL | (ADCH << 8);
-  //	adc1_read_complete = true;
-  //    /* Flip to channel 0 */
-  //    /* Tell it to read ADC0, clear MUX0..3 */
-  //    ADMUX &= B11110000;
-  //    analog_port = 0;
-  //    /* Trigger another conversion */
-  //    ADCSRA |= B01000000;
-  //    return;
-  //  }
-}
-
-
-/* This is the "low speed" 1000x/second sweeper interrupt routine
- * who's sole purpose in life is to reset the output compare value
- * for timer zero to change the output RPM.  In cases where the RPM
- * change per ISR is LESS than one LSB of the counter a set of modulus
- * variabels are used to handle fractional values.
- */
-ISR(TIMER2_COMPA_vect) {
-  //  PORTD = (1 << 7);
-  if (mode != LINEAR_SWEPT_RPM) {
-    //    PORTD = (0 << 7);
-    return;
-  }
-  if (sweep_lock)  // semaphore to protect around changes/critical sections
-  {
-    //   PORTD = (0 << 7);
-    return;
-  }
-  sweep_lock = true;
-  if (sweep_reset_prescaler) {
-    sweep_reset_prescaler = false;
-    reset_prescaler = true;
-    prescaler_bits = SweepSteps[sweep_stage].prescaler_bits;
-    last_prescaler_bits = prescaler_bits;
-  }
-  /* Sweep code */
-  if (sweep_direction == ASCENDING) {
-    oc_remainder += SweepSteps[sweep_stage].remainder_per_isr;
-    /* IF the total is over the threshold we increment the TCNT factor
-     * for each multiple it is over by
-     */
-    while (oc_remainder > FACTOR_THRESHOLD) {
-      fraction++;
-      oc_remainder -= FACTOR_THRESHOLD;
-    }
-    if (new_OCR1A > SweepSteps[sweep_stage].ending_ocr) {
-      new_OCR1A -= (SweepSteps[sweep_stage].tcnt_per_isr + fraction);
-      fraction = 0;
-    } else /* END of the stage, find out where we are */
-    {
-      sweep_stage++;
-      oc_remainder = 0;
-      if (sweep_stage < total_sweep_stages) {
-        /* Toggle  when changing stages */
-        //PORTD &= ~(1<<7); /* turn DBG pin off */
-        //PORTD |= (1<<7);  /* Turn DBG pin on */
-        new_OCR1A = SweepSteps[sweep_stage].beginning_ocr;
-        if (SweepSteps[sweep_stage].prescaler_bits != last_prescaler_bits)
-          sweep_reset_prescaler = true;
-      } else /* END of line, time to reverse direction */
-      {
-        sweep_stage--; /*Bring back within limits */
-        sweep_direction = DESCENDING;
-        new_OCR1A = SweepSteps[sweep_stage].ending_ocr;
-        if (SweepSteps[sweep_stage].prescaler_bits != last_prescaler_bits)
-          sweep_reset_prescaler = true;
-        PORTD |= 1 << 7; /* Debugginga, ascending */
-      }
-      /* Reset fractionals or next round */
-    }
-  } else /* Descending */
-  {
-    oc_remainder += SweepSteps[sweep_stage].remainder_per_isr;
-    while (oc_remainder > FACTOR_THRESHOLD) {
-      fraction++;
-      oc_remainder -= FACTOR_THRESHOLD;
-    }
-    if (new_OCR1A < SweepSteps[sweep_stage].beginning_ocr) {
-      new_OCR1A += (SweepSteps[sweep_stage].tcnt_per_isr + fraction);
-      fraction = 0;
-    } else /* End of stage */
-    {
-      sweep_stage--;
-      oc_remainder = 0;
-      if (sweep_stage >= 0) {
-        new_OCR1A = SweepSteps[sweep_stage].ending_ocr;
-        if (SweepSteps[sweep_stage].prescaler_bits != last_prescaler_bits)
-          sweep_reset_prescaler = true;
-      } else /*End of the line */
-      {
-        sweep_stage++; /*Bring back within limits */
-        sweep_direction = ASCENDING;
-        new_OCR1A = SweepSteps[sweep_stage].beginning_ocr;
-        if (SweepSteps[sweep_stage].prescaler_bits != last_prescaler_bits)
-          sweep_reset_prescaler = true;
-        PORTD &= ~(1 << 7); /*Descending  turn pin off */
-      }
-    }
-  }
-  sweep_lock = false;
-  //wanted_rpm = get_rpm_from_tcnt(&SweepSteps[sweep_stage].beginning_ocr, &SweepSteps[sweep_stage].prescaler_bits);
-  //  PORTD = (0 << 7);
-}
-
-/* Pumps the pattern out of flash to the port 
- * The rate at which this runs is dependent on what OCR1A is set to
- * the sweeper in timer2 alters this on the fly to alow changing of RPM
- * in a very nice way
- */
-
-void printBinary(byte inByte) {
-  for (int b = 7; b >= 0; b--) {
-    Serial.print(bitRead(inByte, b));
-  }
-}
-ISR(TIMER1_COMPA_vect) {
-  /* This is VERY simple, just walk the array and wrap when we hit the limit */
-  // Serial.print("Edge Counter: ");
-  // Serial.print(edge_counter);
-  // Serial.print(",");
-  // selected_wheel = 0;
-  // Serial.print("Select wheel: ");
-  // Serial.print(selected_wheel);
-  // Serial.print(" , ");
-  // Serial.print("Output Invert Mask: ");
-  // printBinary(output_invert_mask);
-  // Serial.print(" , ");
-
-  // Serial.print("Edge State ");
-  // printBinary(pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]));
-  // Serial.print(" , ");
-  // Serial.print(pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]));
-  // Serial.println(",");
-
-  // printBinary(PORTB);
-  // Serial.println();
-
-#if defined(__AVR_ATmega328P__)
-  PORTC = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter]);
-  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << 4); /* Write it to the port */
-  PORTD = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) >> 4);
-
-
-#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  PORTA = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter]);
-  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter])); /* Write it to the port */
-  PORTC = output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]);   /* Write it to the port */
-#endif
-  /* Normal direction  overflow handling */
-  if (normal) {
-    edge_counter++;
-    if (edge_counter == Wheels[selected_wheel].wheel_max_edges) {
-      edge_counter = 0;
-    }
-  } else
-
-  {
-    if (edge_counter == 0)
-      edge_counter = Wheels[selected_wheel].wheel_max_edges;
-    edge_counter--;
-  }
-  /* The tables are in flash so we need pgm_read_byte() */
-
-  /* Reset Prescaler only if flag is set */
-  if (reset_prescaler) {
-    TCCR1B &= ~((1 << CS10) | (1 << CS11) | (1 << CS12)); /* Clear CS10, CS11 and CS12 */
-    TCCR1B |= prescaler_bits;
-    reset_prescaler = false;
-  }
-  /* Reset next compare value for RPM changes */
-  OCR1A = new_OCR1A; /* Apply new "RPM" from Timer2 ISR, i.e. speed up/down the virtual "wheel" */
-}
-
-void loop() {
-  uint16_t tmp_rpm = 0;
-  /* Just handle the Serial UI, everything else is in 
-   * interrupt handlers or callbacks from SerialUI.
-   */
-
-
-  if (Serial.available() > 0) { commandParser(); }
-
-  if (mode == POT_RPM) {
-    if (adc0_read_complete == true) {
-      adc0_read_complete = false;
-      tmp_rpm = adc0 << TMP_RPM_SHIFT;
-      if (tmp_rpm > TMP_RPM_CAP) { tmp_rpm = TMP_RPM_CAP; }
-      wanted_rpm = tmp_rpm;
-      reset_new_OCR1A(tmp_rpm);
-    }
-  }
-}
-
-
-void reset_new_OCR1A(uint32_t new_rpm) {
-  uint32_t tmp;
-  uint8_t bitshift;
-  uint8_t tmp_prescaler_bits;
-  tmp = (uint32_t)(8000000.0 / (Wheels[selected_wheel].rpm_scaler * (float)(new_rpm < 10 ? 10 : new_rpm)));
-  /*  mySUI.print(F("new_OCR1a: "));
-  mySUI.println(tmpl);
-  */
-  get_prescaler_bits(&tmp, &tmp_prescaler_bits, &bitshift);
-  /*
-  mySUI.print(F("new_OCR1a: "));
-  mySUI.println(tmp2);
-  */
-  new_OCR1A = (uint16_t)(tmp >> bitshift);
-  prescaler_bits = tmp_prescaler_bits;
-  reset_prescaler = true;
-}
-
-
-uint8_t get_bitshift_from_prescaler(uint8_t *prescaler_bits) {
-  switch (*prescaler_bits) {
-    case PRESCALE_1024:
-      return 10;
-    case PRESCALE_256:
-      return 8;
-    case PRESCALE_64:
-      return 6;
-    case PRESCALE_8:
-      return 3;
-    case PRESCALE_1:
-      return 0;
-  }
-  return 0;
-}
-
-
-//! Gets RPM from the TCNT value
-/*!
- * Gets the RPM value based on the passed TCNT and prescaler
- * \param tcnt pointer to Output Compare register value
- * \param prescaler_bits point to prescaler bits enum
- */
-uint16_t get_rpm_from_tcnt(uint16_t *tcnt, uint8_t *prescaler_bits) {
-  bitshift = get_bitshift_from_prescaler(prescaler_bits);
-  return (uint16_t)((float)(8000000 >> bitshift) / (Wheels[selected_wheel].rpm_scaler * (*tcnt)));
-}
-
-
-//! Gets prescaler enum and bitshift based on OC value
-void get_prescaler_bits(uint32_t *potential_oc_value, uint8_t *prescaler, uint8_t *bitshift) {
-  if (*potential_oc_value >= 16777216) {
-    *prescaler = PRESCALE_1024;
-    *bitshift = 10;
-  } else if (*potential_oc_value >= 4194304) {
-    *prescaler = PRESCALE_256;
-    *bitshift = 8;
-  } else if (*potential_oc_value >= 524288) {
-    *prescaler = PRESCALE_64;
-    *bitshift = 6;
-  } else if (*potential_oc_value >= 65536) {
-    *prescaler = PRESCALE_8;
-    *bitshift = 3;
-  } else {
-    *prescaler = PRESCALE_1;
-    *bitshift = 0;
-  }
-}
-
-
-//! Builds the SweepSteps[] structure
-/*!
- * For sweeping we cannot just pick the TCNT value at the beginning and ending
- * and sweep linearily between them as it'll result in a VERY slow RPM change
- * at the low end and a VERY FAST change at the high end due to the inverse
- * relationship between RPM and TCNT. So we compromise and break up the RPM
- * range into octaves (doubles of RPM), and use a linear TCNT change between
- * those two points. It's not perfect, but computationally easy
- *
- * \param low_rpm_tcnt pointer to low rpm OC value, (not prescaled!)
- * \param high_rpm_tcnt pointer to low rpm OC value, (not prescaled!)
- * \param total_stages pointer to tell the number of structs to allocate
- * \returns pointer to array of structures for each sweep stage.
- */
-sweep_step *build_sweep_steps(uint32_t *low_rpm_tcnt, uint32_t *high_rpm_tcnt, uint8_t *total_stages) {
-  sweep_step *steps;
-  uint8_t prescaler_bits;
-  uint8_t bitshift;
-  uint32_t tmp = *low_rpm_tcnt;
-  /* DEBUG
-  mySUI.print(*low_rpm_tcnt);
-  mySUI.print(F("<->"));
-  mySUI.println(*high_rpm_tcnt);
-   */
-
-  steps = (sweep_step *)malloc(sizeof(sweep_step) * (*total_stages));
-
-#ifdef MORE_LINEAR_SWEEP
-  for (uint8_t i = 0; i < (*total_stages); i += 2)
-#else
-  for (uint8_t i = 0; i < (*total_stages); i++)
-#endif
-  {
-    /* The low rpm value will ALWAYS have the highed TCNT value so use that
-    to determine the prescaler value
-    */
-    get_prescaler_bits(&tmp, &steps[i].prescaler_bits, &bitshift);
-
-    steps[i].beginning_ocr = (uint16_t)(tmp >> bitshift);
-    if ((tmp >> 1) < (*high_rpm_tcnt))
-      steps[i].ending_ocr = (uint16_t)((*high_rpm_tcnt) >> bitshift);
-    else
-      steps[i].ending_ocr = (uint16_t)(tmp >> (bitshift + 1));  // Half the begin value
-    tmp = tmp >> 1;                                             /* Divide by 2 */
-    /* DEBUG
-    mySUI.print(steps[i].beginning_ocr);
-    mySUI.print(F("<->"));
-    mySUI.println(steps[i].ending_ocr);
-    */
-  }
-  return steps;
-}
+} // End setup

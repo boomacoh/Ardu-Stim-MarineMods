@@ -20,28 +20,13 @@
  *
  */
 
-#ifndef __STRUCTURES_H__
-#define __STRUCTURES_H__
+#ifndef __SWEEP_H__
+#define __SWEEP_H__
 
-#include <inttypes.h>
-#include <avr/pgmspace.h>
- 
-/* Structures */
-typedef struct _sweep_step sweep_step;
-struct _sweep_step {
-  uint16_t beginning_ocr;
-  uint16_t ending_ocr;
-  uint8_t prescaler_bits;
-  uint32_t remainder_per_isr;
-  uint16_t tcnt_per_isr;
-};
+#include "structures.h"
 
-/* Tie things wheel related into one nicer structure ... */
-typedef struct _wheels wheels;
-struct _wheels {
-  const char* decoder_name PROGMEM;
-  const unsigned char *edge_states_ptr PROGMEM;
-  const float rpm_scaler;
-  const uint16_t wheel_max_edges;
-};
+sweep_step * build_sweep_steps(uint32_t *, uint32_t *, uint8_t *);              
+void get_prescaler_bits(uint32_t *, uint8_t *, uint8_t *);
+void reset_new_OCR1A(uint32_t);
+
 #endif
