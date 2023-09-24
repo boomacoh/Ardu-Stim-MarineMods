@@ -66,8 +66,8 @@ wheels Wheels[MAX_WHEELS] = {
   /* Pointer to friendly name string, pointer to edge array, RPM Scaler, Number of edges in the array, whether the number of edges covers 360 or 720 degrees */
   { eight_cam_one_crank_friendly_name, eight_cam_one_crank, eight_cam_one_crank_array, 1.0, 240 },
   { inverted_eight_cam_one_crank_friendly_name, inverted_eight_cam_one_crank, inverted_eight_cam_one_crank_array, 1.0, 240 },
-  { sixty_minus_two_with_4X_cam_friendly_name, sixty_minus_two_with_4X_cam, eight_cam_one_crank_array, 1.0, 240 },
-  { sixty_minus_three_with_4X_cam_friendly_name, sixty_minus_three_with_4X_cam, eight_cam_one_crank_array, 1.0, 240 },
+  { sixty_minus_two_with_4X_cam_friendly_name, sixty_minus_two_with_4X_cam, sixty_minus_two_with_4X_cam, 1.0, 240 },
+  { sixty_minus_three_with_4X_cam_friendly_name, sixty_minus_three_with_4X_cam, sixty_minus_two_with_4X_cam, 1.0, 240 },
 };
 
 
