@@ -291,8 +291,8 @@ ISR(TIMER1_COMPA_vect) {
 
 #if defined(__AVR_ATmega328P__)
   PORTC = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_crank_ptr[edge_counter])) << 4;
-  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << (4 + camSignalBitShift)); /* Write it to the port */
-  PORTD = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << (-4 + camSignalBitShift));
+  PORTB = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) >> (4 + camSignalBitShift)); /* Write it to the port */
+  PORTD = (output_invert_mask ^ pgm_read_byte(&Wheels[selected_wheel].edge_states_ptr[edge_counter]) << (4 + camSignalBitShift));
 
 
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)

@@ -146,9 +146,9 @@ void setup() {
 
 //  pinMode(7, OUTPUT); /* Debug pin for Saleae to track sweep ISR execution speed */
 #if defined(__AVR_ATmega328P__)
-  DDRB = B00011111;
-  DDRD = B11110000;
-  DDRC = B00000001;
+  DDRB = B00111111;
+  DDRD = B11111100;
+  DDRC = B00110000;
 
 
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
